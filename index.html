@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scale Observer Deck - Set 1</title>
+    <title>Scale Observer Deck - Set 2</title>
     <!-- SheetJS for client-side Google Sheet parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -41,7 +41,7 @@
             position: relative;
         }
 
-        /* Top-Right Hand Corner Set 1 Badge */
+        /* Top-Right Hand Corner Set 2 Badge */
         .set-indicator-badge {
             position: absolute;
             top: 10px;
@@ -254,8 +254,8 @@
 <body>
 
     <div class="container">
-        <!-- Set 1 Top-Right Badge -->
-        <div class="set-indicator-badge">🏷️ Set 1</div>
+        <!-- Set 2 Top-Right Badge -->
+        <div class="set-indicator-badge">🏷️ Set 2</div>
 
         <div class="workspace-grid">
             
@@ -358,8 +358,8 @@
     </div>
 
     <script>
-        // Target Google Sheet ID for Set 1
-        const SPREADSHEET_ID = '1M6_B8ccgFx1ud7zTLGTBsnkgVyKuYa3NJxqIhPm-_dQ';
+        // Target Google Sheet ID for Set 2
+        const SPREADSHEET_ID = '1BaLGSpzCtfMYaEUFVrSoZV9gd7HR6Le8fF6KmCHWH3Y';
         const colors = ['red', 'orange', 'green', 'blue', 'purple'];
         const colorLabels = { red: 'Red', orange: 'Orange', green: 'Green', blue: 'Blue', purple: 'Purple' };
         const groups = ['A', 'B', 'C', 'D'];
@@ -421,7 +421,7 @@
             const btn = document.getElementById('btn-update');
             const status = document.getElementById('status-text');
             btn.disabled = true;
-            status.innerText = "Syncing latest result with Google Sheet (Set 1)...";
+            status.innerText = "Syncing latest result with Google Sheet (Set 2)...";
 
             const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&headers=1&tq&nocache=${Date.now()}`;
 
