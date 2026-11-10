@@ -324,7 +324,7 @@
     </div>
 
     <script>
-        // Target Google Sheet ID for Set 2 (replace with your new Sheet ID)
+        // Target Google Sheet ID for Set 2
         const SPREADSHEET_ID = '1BaLGSpzCtfMYaEUFVrSoZV9gd7HR6Le8fF6KmCHWH3Y';
         const colors = ['red', 'orange', 'green', 'blue', 'purple'];
         const colorLabels = { red: 'Red', orange: 'Orange', green: 'Green', blue: 'Blue', purple: 'Purple' };
@@ -443,6 +443,7 @@
             }
 
             let historyArray = [];
+            // Parse all rows properly, skipping the header (index 0)
             for (let i = 1; i < jsonRows.length; i++) {
                 let row = jsonRows[i];
                 if (row.length === 0) continue;
