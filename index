@@ -325,7 +325,7 @@
 
     <script>
         // Target Google Sheet ID for Set 2 (replace with your new Sheet ID)
-        const SPREADSHEET_ID = 'YOUR_NEW_SET_2_SPREADSHEET_ID_HERE';
+        const SPREADSHEET_ID = '1BaLGSpzCtfMYaEUFVrSoZV9gd7HR6Le8fF6KmCHWH3Y';
         const colors = ['red', 'orange', 'green', 'blue', 'purple'];
         const colorLabels = { red: 'Red', orange: 'Orange', green: 'Green', blue: 'Blue', purple: 'Purple' };
         const groups = ['A', 'B', 'C', 'D'];
