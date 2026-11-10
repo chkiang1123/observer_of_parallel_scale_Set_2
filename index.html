@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scale Observer Deck - Set 2</title>
-    <!-- SheetJS for resilient client-side CSV/Excel parsing -->
+    <!-- SheetJS for client-side Google Sheet parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -41,7 +41,7 @@
             position: relative;
         }
 
-        /* Top-Right Hand Corner Set Badge */
+        /* Top-Right Hand Corner Set 2 Badge */
         .set-indicator-badge {
             position: absolute;
             top: 10px;
@@ -167,25 +167,16 @@
         .right-heavy { color: #e67e22; border-left-color: #e67e22; }
 
         /* --- CONTROL ACTIONS --- */
-        .bottom-actions { margin-top: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .bottom-actions { margin-top: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
         
-        .action-row {
-            display: flex; align-items: center; gap: 18px; flex-wrap: wrap; justify-content: center;
-        }
-
         .btn-update {
             background-color: #3498db; color: white; font-size: 22px; font-weight: bold;
-            padding: 16px 65px; border-radius: 12px; box-shadow: 0 5px 18px rgba(52, 152, 219, 0.4); border: none; cursor: pointer;
+            padding: 16px 70px; border-radius: 12px; box-shadow: 0 5px 18px rgba(52, 152, 219, 0.4); border: none; cursor: pointer;
             text-transform: uppercase; letter-spacing: 1.5px; transition: transform 0.1s ease, background-color 0.2s ease;
         }
         .btn-update:hover { background-color: #2980b9; }
         .btn-update:active { transform: scale(0.97); }
         .btn-update:disabled { background-color: #555; box-shadow: none; cursor: not-allowed; }
-
-        .auto-sync-toggle {
-            display: flex; align-items: center; gap: 8px; font-size: 15px; color: #ddd; cursor: pointer; user-select: none;
-        }
-        .auto-sync-toggle input { width: 18px; height: 18px; cursor: pointer; }
 
         .status-text { color: #aaa; font-size: 15px; font-style: italic; min-height: 22px; text-align: center; }
 
@@ -219,10 +210,41 @@
         .highlighted-col { color: var(--gold); font-weight: bold; font-size: 18px; opacity: 1; text-shadow: 0 0 5px rgba(212, 175, 55, 0.5); }
         .highlighted-th { color: var(--gold); }
 
-        #record-list { display: flex; flex-direction: column; gap: 10px; max-height: 220px; overflow-y: auto; padding-right: 5px; }
+        /* Replay-enabled History Card */
+        #record-list { display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; padding-right: 5px; }
         .record-placeholder { text-align: center; color: #777; font-style: italic; padding: 12px; font-size: 14px; }
-        .record-item { background: #1f1f26; padding: 12px 14px; border-radius: 8px; font-size: 14px; border-left: 4px solid #3498db; line-height: 1.5; }
-        .record-meta { color: #888; font-size: 12px; margin-bottom: 4px; font-weight: bold; text-transform: uppercase; }
+        
+        .record-item {
+            background: #1f1f26; padding: 12px 14px; border-radius: 8px; font-size: 13px;
+            border-left: 5px solid #3498db; line-height: 1.5; cursor: pointer;
+            transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+            position: relative;
+        }
+        .record-item:hover {
+            background: #2a2a35;
+            border-left-color: var(--gold);
+            transform: translateX(4px);
+        }
+        .record-item.active-replaying {
+            border-left-color: var(--gold);
+            background: #2f2f3e;
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+        }
+
+        .record-header-row {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+        }
+        .record-meta { color: #888; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .replay-badge {
+            background: rgba(52, 152, 219, 0.2); color: #3498db; border: 1px solid #3498db;
+            font-size: 10px; font-weight: bold; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.5px;
+        }
+        .record-item:hover .replay-badge {
+            background: rgba(212, 175, 55, 0.2); color: var(--gold); border-color: var(--gold);
+        }
+
+        .placed-summary { color: #fff; margin-bottom: 3px; }
+        .placed-summary b { color: var(--gold); }
 
         #record-list::-webkit-scrollbar { width: 6px; }
         #record-list::-webkit-scrollbar-track { background: #1f1f26; }
@@ -232,8 +254,8 @@
 <body>
 
     <div class="container">
-        <!-- Set Badge -->
-        <div class="set-indicator-badge" id="set-badge">🏷️ Set 2</div>
+        <!-- Set 2 Top-Right Badge -->
+        <div class="set-indicator-badge">🏷️ Set 2</div>
 
         <div class="workspace-grid">
             
@@ -290,12 +312,7 @@
         </div>
 
         <div class="bottom-actions">
-            <div class="action-row">
-                <button id="btn-update" class="btn-update" onclick="fetchUpdate()">🔄 Update Display</button>
-                <label class="auto-sync-toggle">
-                    <input type="checkbox" id="auto-sync-chk" onchange="toggleAutoSync(this.checked)"> Auto-Sync (Every 3s)
-                </label>
-            </div>
+            <button id="btn-update" class="btn-update" onclick="fetchUpdate()">🔄 Update Display</button>
             <div id="status-text" class="status-text">Ready.</div>
         </div>
 
@@ -331,7 +348,7 @@
 
             <!-- OBSERVATION LOG PANEL -->
             <div class="dashboard-panel">
-                <h3>📝 Calculation History & Record Log</h3>
+                <h3>📝 Calculation History & Placement Log</h3>
                 <div id="record-list">
                     <div class="record-placeholder">No records loaded yet. Tap "🔄 Update Display" to sync.</div>
                 </div>
@@ -341,9 +358,8 @@
     </div>
 
     <script>
-        // Target Google Sheet ID (Ensure sheet sharing is set to "Anyone with the link can view")
+        // Target Google Sheet ID for Set 2
         const SPREADSHEET_ID = '1BaLGSpzCtfMYaEUFVrSoZV9gd7HR6Le8fF6KmCHWH3Y';
-
         const colors = ['red', 'orange', 'green', 'blue', 'purple'];
         const colorLabels = { red: 'Red', orange: 'Orange', green: 'Green', blue: 'Blue', purple: 'Purple' };
         const groups = ['A', 'B', 'C', 'D'];
@@ -357,7 +373,8 @@
         let lastProcessedRow = 0;
         let animationQueue = [];
         let pendingResultData = null;
-        let autoSyncTimer = null;
+        let isAnimating = false;
+        let parsedHistoryRecords = []; // Stores structured historical turns for instant replay
 
         function resetInventoryToDefault() {
             groups.forEach(g => {
@@ -400,39 +417,26 @@
             });
         }
 
-        function toggleAutoSync(enabled) {
-            if (autoSyncTimer) clearInterval(autoSyncTimer);
-            if (enabled) {
-                fetchUpdate();
-                autoSyncTimer = setInterval(fetchUpdate, 3000);
-            }
-        }
-
-        // Direct fetch from Google Sheet with anti-caching parameter
+        // Direct manual fetch from Google Sheet with anti-caching
         function fetchUpdate() {
+            if (isAnimating) return;
             const btn = document.getElementById('btn-update');
             const status = document.getElementById('status-text');
-            
-            if (!document.getElementById('auto-sync-chk').checked) {
-                btn.disabled = true;
-            }
+            btn.disabled = true;
             status.innerText = "Syncing with Google Sheet...";
 
-            // Direct CSV export URL with cache-busting timestamp
             const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&headers=1&tq&nocache=${Date.now()}`;
 
             fetch(csvUrl)
                 .then(res => {
-                    if (!res.ok) {
-                        throw new Error(`HTTP ${res.status}: Sheet is private or inaccessible.`);
-                    }
+                    if (!res.ok) throw new Error(`HTTP ${res.status}: Sheet is private or inaccessible.`);
                     return res.text();
                 })
                 .then(csvText => {
                     parseCsvHistory(csvText);
                 })
                 .catch(err => {
-                    status.innerHTML = `<span style="color:#ff6b6b;">⚠️ Sync Error: Make sure your Sheet is shared as <b>"Anyone with the link can view"</b>!</span>`;
+                    status.innerHTML = `<span style="color:#ff6b6b;">⚠️ Sync Error: Ensure Sheet is set to <b>"Anyone with the link can view"</b>!</span>`;
                     btn.disabled = false;
                 });
         }
@@ -489,7 +493,7 @@
             let s = str.trim();
             if (s === '' || s.toLowerCase() === 'empty') return res;
 
-            if (s.includes('|')) return res; // Reject hidden weight configuration strings
+            if (s.includes('|')) return res; // Reject configuration strings
 
             let items = s.replace(/;/g, ',').split(',');
 
@@ -522,6 +526,17 @@
             else if (key === 'purple' || key === 'p') res.purple = qty;
         }
 
+        // Helper to format deltas into human-friendly strings like "+Red x2, +Blue x1"
+        function formatDeltaString(deltaObj) {
+            let items = [];
+            colors.forEach(c => {
+                if (deltaObj[c] > 0) {
+                    items.push(`+${colorLabels[c]} x${deltaObj[c]}`);
+                }
+            });
+            return items.length > 0 ? items.join(', ') : 'None';
+        }
+
         function processAllRowsData(data) {
             const btn = document.getElementById('btn-update');
             const status = document.getElementById('status-text');
@@ -532,93 +547,173 @@
                 return;
             }
 
-            const history = data.history;
-            const latestData = history[history.length - 1];
-
+            const rawHistory = data.history;
             resetInventoryToDefault();
-            
-            // Recompute inventory deductions across all past rows
-            history.forEach(row => {
-                let g = String(row.group).trim();
-                if (!groups.includes(g)) return;
 
-                let pl = parsePanString(row.primaryLeft);
-                let pr = parsePanString(row.primaryRight);
-                let sl = parsePanString(row.secondaryLeft);
-                let sr = parsePanString(row.secondaryRight);
-
-                colors.forEach(c => {
-                    let totalUsed = pl[c] + pr[c] + sl[c] + sr[c];
-                    if (totalUsed > 0 && groupInventory[g]) {
-                        groupInventory[g][c] = Math.max(0, groupInventory[g][c] - totalUsed);
-                    }
-                });
-            });
-
-            // Update on-screen history log
-            const list = document.getElementById('record-list');
-            list.innerHTML = '';
-            for (let i = history.length - 1; i >= 0; i--) {
-                addRecordLogItem(history[i], list);
-            }
-
-            const targetStates = {
-                p: { l: parsePanString(latestData.primaryLeft), r: parsePanString(latestData.primaryRight) },
-                s: { l: parsePanString(latestData.secondaryLeft), r: parsePanString(latestData.secondaryRight) }
+            // Structure every row into pre-calculated turn records with prior states & placed deltas
+            parsedHistoryRecords = [];
+            let runningState = {
+                p: { l: {red:0, orange:0, green:0, blue:0, purple:0}, r: {red:0, orange:0, green:0, blue:0, purple:0} },
+                s: { l: {red:0, orange:0, green:0, blue:0, purple:0}, r: {red:0, orange:0, green:0, blue:0, purple:0} }
             };
 
-            let totalAdded = 0;
-            let requiresHardReset = false;
-            animationQueue = [];
+            rawHistory.forEach(row => {
+                let g = String(row.group).trim();
+                let targetStates = {
+                    p: { l: parsePanString(row.primaryLeft), r: parsePanString(row.primaryRight) },
+                    s: { l: parsePanString(row.secondaryLeft), r: parsePanString(row.secondaryRight) }
+                };
 
+                let prevStateSnapshot = JSON.parse(JSON.stringify(runningState));
+                let placedDeltas = {
+                    p: { l: {}, r: {} },
+                    s: { l: {}, r: {} }
+                };
+
+                let totalTurnAdded = 0;
+
+                ['p', 's'].forEach(scale => {
+                    ['l', 'r'].forEach(side => {
+                        colors.forEach(c => {
+                            let diff = targetStates[scale][side][c] - prevStateSnapshot[scale][side][c];
+                            placedDeltas[scale][side][c] = Math.max(0, diff);
+                            if (diff > 0) totalTurnAdded += diff;
+                        });
+                    });
+                });
+
+                // Deduct from group's remaining inventory
+                if (groups.includes(g) && groupInventory[g]) {
+                    ['p', 's'].forEach(scale => {
+                        ['l', 'r'].forEach(side => {
+                            colors.forEach(c => {
+                                let placed = placedDeltas[scale][side][c];
+                                if (placed > 0) {
+                                    groupInventory[g][c] = Math.max(0, groupInventory[g][c] - placed);
+                                }
+                            });
+                        });
+                    });
+                }
+
+                parsedHistoryRecords.push({
+                    rowNumber: row.rowNumber,
+                    timestamp: row.timestamp,
+                    group: g,
+                    primaryResult: row.primaryResult,
+                    secondaryResult: row.secondaryResult,
+                    prevState: prevStateSnapshot,
+                    targetState: targetStates,
+                    deltas: placedDeltas,
+                    totalAdded: totalTurnAdded
+                });
+
+                runningState = JSON.parse(JSON.stringify(targetStates));
+            });
+
+            // Render History Log (Newest at top)
+            renderHistoryCards();
+            renderInventoryDisplay();
+
+            // Play animation for the newest row if not already seen
+            const latestRecord = parsedHistoryRecords[parsedHistoryRecords.length - 1];
+            if (lastProcessedRow !== latestRecord.rowNumber) {
+                lastProcessedRow = latestRecord.rowNumber;
+                playTurnAnimation(latestRecord);
+            } else {
+                status.innerText = `✓ Up to date with Row #${latestRecord.rowNumber}.`;
+                btn.disabled = false;
+            }
+        }
+
+        function renderHistoryCards() {
+            const list = document.getElementById('record-list');
+            list.innerHTML = '';
+
+            for (let i = parsedHistoryRecords.length - 1; i >= 0; i--) {
+                const record = parsedHistoryRecords[i];
+                const card = document.createElement('div');
+                card.className = 'record-item';
+                card.id = `history-card-${record.rowNumber}`;
+                card.onclick = () => replayFromCard(record);
+
+                const pL = formatDeltaString(record.deltas.p.l);
+                const pR = formatDeltaString(record.deltas.p.r);
+                const sL = formatDeltaString(record.deltas.s.l);
+                const sR = formatDeltaString(record.deltas.s.r);
+
+                card.innerHTML = `
+                    <div class="record-header-row">
+                        <div class="record-meta">Row #${record.rowNumber} • ${record.timestamp} • <b>Group ${record.group}</b></div>
+                        <div class="replay-badge">▶ Click to Replay</div>
+                    </div>
+                    <div class="placed-summary">
+                        ⭐ <b>Primary Added:</b> Left [${pL}] | Right [${pR}] ➔ <span style="font-weight:bold;">${record.primaryResult}</span>
+                    </div>
+                    <div class="placed-summary">
+                        🌙 <b>Secondary Added:</b> Left [${sL}] | Right [${sR}] ➔ <span style="font-weight:bold;">${record.secondaryResult}</span>
+                    </div>
+                `;
+                list.appendChild(card);
+            }
+        }
+
+        // Replay Trigger from History Click
+        function replayFromCard(record) {
+            if (isAnimating) return;
+            
+            // Highlight selected card
+            document.querySelectorAll('.record-item').forEach(c => c.classList.remove('active-replaying'));
+            const cardEl = document.getElementById(`history-card-${record.rowNumber}`);
+            if (cardEl) cardEl.classList.add('active-replaying');
+
+            playTurnAnimation(record);
+        }
+
+        // Core Replay Routine: resets scale to prior state, drops cubes, tilts beam
+        function playTurnAnimation(record) {
+            isAnimating = true;
+            document.getElementById('btn-update').disabled = true;
+
+            const status = document.getElementById('status-text');
+            status.innerText = `Replaying Turn #${record.rowNumber} (Group ${record.group}): Setting scale to prior state...`;
+
+            // 1. Reset scale level
+            resetScaleRotations();
+
+            // 2. Render previous state of the scale
+            currentState = JSON.parse(JSON.stringify(record.prevState));
+            hardRenderAllPans();
+
+            // 3. Build sequential drop queue for this specific turn
+            animationQueue = [];
             ['p', 's'].forEach(scale => {
                 ['l', 'r'].forEach(side => {
-                    colors.forEach(color => {
-                        let oldQty = currentState[scale][side][color];
-                        let newQty = targetStates[scale][side][color];
-                        let diff = newQty - oldQty;
-
-                        if (diff < 0) {
-                            requiresHardReset = true;
-                        } else if (diff > 0) {
-                            if (newQty >= 10) {
-                                animationQueue.push({ type: 'block', scale, side, color, count: newQty });
-                                totalAdded += diff;
+                    colors.forEach(c => {
+                        let count = record.deltas[scale][side][c];
+                        let finalCount = record.targetState[scale][side][c];
+                        if (count > 0) {
+                            if (finalCount >= 10) {
+                                animationQueue.push({ type: 'block', scale, side, color: c, count: finalCount });
                             } else {
-                                for (let i = 0; i < diff; i++) {
-                                    animationQueue.push({ type: 'cube', scale, side, color });
+                                for (let k = 0; k < count; k++) {
+                                    animationQueue.push({ type: 'cube', scale, side, color: c });
                                 }
-                                totalAdded += diff;
                             }
                         }
                     });
                 });
             });
 
-            if (!requiresHardReset && totalAdded === 0 && lastProcessedRow === latestData.rowNumber) {
-                status.innerText = `✓ Up to date with Row #${latestData.rowNumber}.`;
-                renderInventoryDisplay();
-                btn.disabled = false;
-                return;
-            }
+            pendingResultData = record;
 
-            lastProcessedRow = latestData.rowNumber;
-            pendingResultData = latestData;
-            
-            renderInventoryDisplay();
-            resetScaleRotations();
-
-            if (requiresHardReset) {
-                status.innerText = `Syncing scales (Row #${latestData.rowNumber})...`;
-                currentState = JSON.parse(JSON.stringify(targetStates));
-                hardRenderAllPans();
-                animationQueue = [];
-                triggerSwings();
-            } else if (animationQueue.length > 0) {
-                status.innerText = `Adding ${totalAdded} cube(s) from Group ${latestData.group}...`;
-                processQueue();
+            // 4. Drop cubes or trigger swing immediately if no cubes were added
+            if (animationQueue.length > 0) {
+                status.innerText = `Dropping cubes placed by Group ${record.group}...`;
+                setTimeout(processQueue, 300);
             } else {
-                triggerSwings();
+                status.innerText = `Turn #${record.rowNumber} (No cubes added). Showing result...`;
+                setTimeout(triggerSwings, 400);
             }
         }
 
@@ -715,26 +810,13 @@
             resBox.innerHTML = resultText || "⚖️ BALANCED";
         }
 
-        function addRecordLogItem(data, listElement) {
-            const pInfo = `<span style="color:var(--gold); font-weight:bold;">★ Primary:</span> Left [${data.primaryLeft || 'Empty'}] vs Right [${data.primaryRight || 'Empty'}] ➔ <b>${data.primaryResult}</b>`;
-            const sInfo = `<span style="color:var(--silver); font-weight:bold;">🌙 Secondary:</span> Left [${data.secondaryLeft || 'Empty'}] vs Right [${data.secondaryRight || 'Empty'}] ➔ <b>${data.secondaryResult}</b>`;
-
-            const item = document.createElement('div');
-            item.className = 'record-item';
-            item.innerHTML = `
-                <div class="record-meta">Row #${data.rowNumber} • Time: ${data.timestamp} • <b>By: Group ${data.group}</b></div>
-                <div>${pInfo}</div>
-                <div style="margin-top:4px;">${sInfo}</div>
-            `;
-            listElement.appendChild(item);
-        }
-
         function triggerSwings() {
             if (pendingResultData) {
                 applySwingToScale('p', pendingResultData.primaryResult);
                 applySwingToScale('s', pendingResultData.secondaryResult);
-                document.getElementById('status-text').innerText = `✓ Updated to Row #${pendingResultData.rowNumber}.`;
+                document.getElementById('status-text').innerText = `✓ Showing Row #${pendingResultData.rowNumber} (Group ${pendingResultData.group}).`;
             }
+            isAnimating = false;
             document.getElementById('btn-update').disabled = false;
         }
 
