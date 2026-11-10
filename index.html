@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scale Observer Deck - Set 2</title>
-    <!-- SheetJS for resilient online data parsing -->
+    <!-- SheetJS for resilient client-side CSV/Excel parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -41,7 +41,7 @@
             position: relative;
         }
 
-        /* Top-Right Hand Corner Set 2 Badge */
+        /* Top-Right Hand Corner Set Badge */
         .set-indicator-badge {
             position: absolute;
             top: 10px;
@@ -166,18 +166,30 @@
         .left-heavy { color: #f1c40f; border-left-color: #f1c40f; }
         .right-heavy { color: #e67e22; border-left-color: #e67e22; }
 
-        .bottom-actions { margin-top: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        /* --- CONTROL ACTIONS --- */
+        .bottom-actions { margin-top: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        
+        .action-row {
+            display: flex; align-items: center; gap: 18px; flex-wrap: wrap; justify-content: center;
+        }
+
         .btn-update {
             background-color: #3498db; color: white; font-size: 22px; font-weight: bold;
-            padding: 16px 70px; border-radius: 12px; box-shadow: 0 5px 18px rgba(52, 152, 219, 0.4); border: none; cursor: pointer;
+            padding: 16px 65px; border-radius: 12px; box-shadow: 0 5px 18px rgba(52, 152, 219, 0.4); border: none; cursor: pointer;
             text-transform: uppercase; letter-spacing: 1.5px; transition: transform 0.1s ease, background-color 0.2s ease;
         }
         .btn-update:hover { background-color: #2980b9; }
         .btn-update:active { transform: scale(0.97); }
         .btn-update:disabled { background-color: #555; box-shadow: none; cursor: not-allowed; }
 
+        .auto-sync-toggle {
+            display: flex; align-items: center; gap: 8px; font-size: 15px; color: #ddd; cursor: pointer; user-select: none;
+        }
+        .auto-sync-toggle input { width: 18px; height: 18px; cursor: pointer; }
+
         .status-text { color: #aaa; font-size: 15px; font-style: italic; min-height: 22px; text-align: center; }
 
+        /* --- DASHBOARD (INVENTORY & RECORD LOG) --- */
         .dashboard-container {
             width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
             margin-top: 20px;
@@ -207,7 +219,7 @@
         .highlighted-col { color: var(--gold); font-weight: bold; font-size: 18px; opacity: 1; text-shadow: 0 0 5px rgba(212, 175, 55, 0.5); }
         .highlighted-th { color: var(--gold); }
 
-        #record-list { display: flex; flex-direction: column; gap: 10px; max-height: 200px; overflow-y: auto; padding-right: 5px; }
+        #record-list { display: flex; flex-direction: column; gap: 10px; max-height: 220px; overflow-y: auto; padding-right: 5px; }
         .record-placeholder { text-align: center; color: #777; font-style: italic; padding: 12px; font-size: 14px; }
         .record-item { background: #1f1f26; padding: 12px 14px; border-radius: 8px; font-size: 14px; border-left: 4px solid #3498db; line-height: 1.5; }
         .record-meta { color: #888; font-size: 12px; margin-bottom: 4px; font-weight: bold; text-transform: uppercase; }
@@ -220,8 +232,8 @@
 <body>
 
     <div class="container">
-        <!-- Set 2 Top-Right Badge -->
-        <div class="set-indicator-badge">🏷️ Set 2</div>
+        <!-- Set Badge -->
+        <div class="set-indicator-badge" id="set-badge">🏷️ Set 2</div>
 
         <div class="workspace-grid">
             
@@ -278,7 +290,12 @@
         </div>
 
         <div class="bottom-actions">
-            <button id="btn-update" class="btn-update" onclick="fetchUpdate()">🔄 Update Display</button>
+            <div class="action-row">
+                <button id="btn-update" class="btn-update" onclick="fetchUpdate()">🔄 Update Display</button>
+                <label class="auto-sync-toggle">
+                    <input type="checkbox" id="auto-sync-chk" onchange="toggleAutoSync(this.checked)"> Auto-Sync (Every 3s)
+                </label>
+            </div>
             <div id="status-text" class="status-text">Ready.</div>
         </div>
 
@@ -324,8 +341,9 @@
     </div>
 
     <script>
-        // Target Google Sheet ID for Set 2
+        // Target Google Sheet ID (Ensure sheet sharing is set to "Anyone with the link can view")
         const SPREADSHEET_ID = '1BaLGSpzCtfMYaEUFVrSoZV9gd7HR6Le8fF6KmCHWH3Y';
+
         const colors = ['red', 'orange', 'green', 'blue', 'purple'];
         const colorLabels = { red: 'Red', orange: 'Orange', green: 'Green', blue: 'Blue', purple: 'Purple' };
         const groups = ['A', 'B', 'C', 'D'];
@@ -339,6 +357,7 @@
         let lastProcessedRow = 0;
         let animationQueue = [];
         let pendingResultData = null;
+        let autoSyncTimer = null;
 
         function resetInventoryToDefault() {
             groups.forEach(g => {
@@ -381,39 +400,39 @@
             });
         }
 
-        function fetchUpdate() {
-            const btn = document.getElementById('btn-update');
-            const status = document.getElementById('status-text');
-            btn.disabled = true;
-            status.innerText = "Checking sheet for Set 2 records...";
-
-            if (typeof google !== 'undefined' && google.script && google.script.run) {
-                google.script.run
-                    .withSuccessHandler(processAllRowsData)
-                    .withFailureHandler(err => {
-                        fetchFromGoogleSheetDirect();
-                    })
-                    .getLatestScaleData();
-            } else {
-                fetchFromGoogleSheetDirect();
+        function toggleAutoSync(enabled) {
+            if (autoSyncTimer) clearInterval(autoSyncTimer);
+            if (enabled) {
+                fetchUpdate();
+                autoSyncTimer = setInterval(fetchUpdate, 3000);
             }
         }
 
-        function fetchFromGoogleSheetDirect() {
-            const status = document.getElementById('status-text');
+        // Direct fetch from Google Sheet with anti-caching parameter
+        function fetchUpdate() {
             const btn = document.getElementById('btn-update');
-            const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv`;
+            const status = document.getElementById('status-text');
+            
+            if (!document.getElementById('auto-sync-chk').checked) {
+                btn.disabled = true;
+            }
+            status.innerText = "Syncing with Google Sheet...";
+
+            // Direct CSV export URL with cache-busting timestamp
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&headers=1&tq&nocache=${Date.now()}`;
 
             fetch(csvUrl)
                 .then(res => {
-                    if (!res.ok) throw new Error("Could not access sheet online.");
+                    if (!res.ok) {
+                        throw new Error(`HTTP ${res.status}: Sheet is private or inaccessible.`);
+                    }
                     return res.text();
                 })
                 .then(csvText => {
                     parseCsvHistory(csvText);
                 })
                 .catch(err => {
-                    status.innerText = "Fetch Error: " + err.message;
+                    status.innerHTML = `<span style="color:#ff6b6b;">⚠️ Sync Error: Make sure your Sheet is shared as <b>"Anyone with the link can view"</b>!</span>`;
                     btn.disabled = false;
                 });
         }
@@ -443,10 +462,9 @@
             }
 
             let historyArray = [];
-            // Parse all rows properly, skipping the header (index 0)
             for (let i = 1; i < jsonRows.length; i++) {
                 let row = jsonRows[i];
-                if (row.length === 0) continue;
+                if (!row || row.length === 0) continue;
 
                 historyArray.push({
                     rowNumber: i + 1,
@@ -462,7 +480,7 @@
                 });
             }
 
-            processAllRowsData({ history: historyArray, sheetName: "Google Sheet" });
+            processAllRowsData({ history: historyArray });
         }
 
         function parsePanString(str) {
@@ -471,7 +489,7 @@
             let s = str.trim();
             if (s === '' || s.toLowerCase() === 'empty') return res;
 
-            if (s.includes('|')) return res;
+            if (s.includes('|')) return res; // Reject hidden weight configuration strings
 
             let items = s.replace(/;/g, ',').split(',');
 
@@ -508,13 +526,8 @@
             const btn = document.getElementById('btn-update');
             const status = document.getElementById('status-text');
 
-            if (!data || data.empty || !data.history || data.history.length === 0) {
-                status.innerText = data.message || "No calculation history found.";
-                btn.disabled = false;
-                return;
-            }
-            if (data.error) {
-                status.innerText = "Sheet Error: " + data.error;
+            if (!data || !data.history || data.history.length === 0) {
+                status.innerText = "No calculations found.";
                 btn.disabled = false;
                 return;
             }
@@ -524,6 +537,7 @@
 
             resetInventoryToDefault();
             
+            // Recompute inventory deductions across all past rows
             history.forEach(row => {
                 let g = String(row.group).trim();
                 if (!groups.includes(g)) return;
@@ -541,6 +555,7 @@
                 });
             });
 
+            // Update on-screen history log
             const list = document.getElementById('record-list');
             list.innerHTML = '';
             for (let i = history.length - 1; i >= 0; i--) {
@@ -581,7 +596,7 @@
             });
 
             if (!requiresHardReset && totalAdded === 0 && lastProcessedRow === latestData.rowNumber) {
-                status.innerText = `✓ Up to date with Row #${latestData.rowNumber}. No new graphical changes.`;
+                status.innerText = `✓ Up to date with Row #${latestData.rowNumber}.`;
                 renderInventoryDisplay();
                 btn.disabled = false;
                 return;
@@ -594,7 +609,7 @@
             resetScaleRotations();
 
             if (requiresHardReset) {
-                status.innerText = `Syncing scale state (Row #${latestData.rowNumber})...`;
+                status.innerText = `Syncing scales (Row #${latestData.rowNumber})...`;
                 currentState = JSON.parse(JSON.stringify(targetStates));
                 hardRenderAllPans();
                 animationQueue = [];
@@ -723,7 +738,10 @@
             document.getElementById('btn-update').disabled = false;
         }
 
-        window.onload = initInventory;
+        window.onload = function() {
+            initInventory();
+            fetchUpdate(); // Initial sync on page open
+        };
     </script>
 </body>
 </html>
