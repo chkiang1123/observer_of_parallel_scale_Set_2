@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scale Observer Deck - Set 2</title>
+    <title>Scale Observer Deck - Set 1</title>
     <!-- SheetJS for client-side Google Sheet parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -41,7 +41,7 @@
             position: relative;
         }
 
-        /* Top-Right Hand Corner Set 2 Badge */
+        /* Top-Right Hand Corner Set 1 Badge */
         .set-indicator-badge {
             position: absolute;
             top: 10px;
@@ -254,8 +254,8 @@
 <body>
 
     <div class="container">
-        <!-- Set 2 Top-Right Badge -->
-        <div class="set-indicator-badge">🏷️ Set 2</div>
+        <!-- Set 1 Top-Right Badge -->
+        <div class="set-indicator-badge">🏷️ Set 1</div>
 
         <div class="workspace-grid">
             
@@ -358,8 +358,8 @@
     </div>
 
     <script>
-        // Target Google Sheet ID for Set 2
-        const SPREADSHEET_ID = '1BaLGSpzCtfMYaEUFVrSoZV9gd7HR6Le8fF6KmCHWH3Y';
+        // Target Google Sheet ID for Set 1
+        const SPREADSHEET_ID = '1M6_B8ccgFx1ud7zTLGTBsnkgVyKuYa3NJxqIhPm-_dQ';
         const colors = ['red', 'orange', 'green', 'blue', 'purple'];
         const colorLabels = { red: 'Red', orange: 'Orange', green: 'Green', blue: 'Blue', purple: 'Purple' };
         const groups = ['A', 'B', 'C', 'D'];
@@ -370,11 +370,10 @@
         };
 
         let groupInventory = {};
-        let lastProcessedRow = 0;
         let animationQueue = [];
         let pendingResultData = null;
         let isAnimating = false;
-        let parsedHistoryRecords = []; // Stores structured historical turns for instant replay
+        let parsedHistoryRecords = [];
 
         function resetInventoryToDefault() {
             groups.forEach(g => {
@@ -417,13 +416,12 @@
             });
         }
 
-        // Direct manual fetch from Google Sheet with anti-caching
         function fetchUpdate() {
             if (isAnimating) return;
             const btn = document.getElementById('btn-update');
             const status = document.getElementById('status-text');
             btn.disabled = true;
-            status.innerText = "Syncing with Google Sheet...";
+            status.innerText = "Syncing latest result with Google Sheet (Set 1)...";
 
             const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&headers=1&tq&nocache=${Date.now()}`;
 
@@ -493,7 +491,7 @@
             let s = str.trim();
             if (s === '' || s.toLowerCase() === 'empty') return res;
 
-            if (s.includes('|')) return res; // Reject configuration strings
+            if (s.includes('|')) return res;
 
             let items = s.replace(/;/g, ',').split(',');
 
@@ -526,7 +524,6 @@
             else if (key === 'purple' || key === 'p') res.purple = qty;
         }
 
-        // Helper to format deltas into human-friendly strings like "+Red x2, +Blue x1"
         function formatDeltaString(deltaObj) {
             let items = [];
             colors.forEach(c => {
@@ -550,7 +547,6 @@
             const rawHistory = data.history;
             resetInventoryToDefault();
 
-            // Structure every row into pre-calculated turn records with prior states & placed deltas
             parsedHistoryRecords = [];
             let runningState = {
                 p: { l: {red:0, orange:0, green:0, blue:0, purple:0}, r: {red:0, orange:0, green:0, blue:0, purple:0} },
@@ -582,7 +578,6 @@
                     });
                 });
 
-                // Deduct from group's remaining inventory
                 if (groups.includes(g) && groupInventory[g]) {
                     ['p', 's'].forEach(scale => {
                         ['l', 'r'].forEach(side => {
@@ -611,19 +606,17 @@
                 runningState = JSON.parse(JSON.stringify(targetStates));
             });
 
-            // Render History Log (Newest at top)
             renderHistoryCards();
             renderInventoryDisplay();
 
-            // Play animation for the newest row if not already seen
+            // Always display the latest result whenever "Update Display" is clicked
             const latestRecord = parsedHistoryRecords[parsedHistoryRecords.length - 1];
-            if (lastProcessedRow !== latestRecord.rowNumber) {
-                lastProcessedRow = latestRecord.rowNumber;
-                playTurnAnimation(latestRecord);
-            } else {
-                status.innerText = `✓ Up to date with Row #${latestRecord.rowNumber}.`;
-                btn.disabled = false;
-            }
+            
+            document.querySelectorAll('.record-item').forEach(c => c.classList.remove('active-replaying'));
+            const latestCard = document.getElementById(`history-card-${latestRecord.rowNumber}`);
+            if (latestCard) latestCard.classList.add('active-replaying');
+
+            playTurnAnimation(latestRecord, true);
         }
 
         function renderHistoryCards() {
@@ -658,34 +651,30 @@
             }
         }
 
-        // Replay Trigger from History Click
         function replayFromCard(record) {
             if (isAnimating) return;
             
-            // Highlight selected card
             document.querySelectorAll('.record-item').forEach(c => c.classList.remove('active-replaying'));
             const cardEl = document.getElementById(`history-card-${record.rowNumber}`);
             if (cardEl) cardEl.classList.add('active-replaying');
 
-            playTurnAnimation(record);
+            playTurnAnimation(record, false);
         }
 
-        // Core Replay Routine: resets scale to prior state, drops cubes, tilts beam
-        function playTurnAnimation(record) {
+        function playTurnAnimation(record, isLatest = false) {
             isAnimating = true;
             document.getElementById('btn-update').disabled = true;
 
             const status = document.getElementById('status-text');
-            status.innerText = `Replaying Turn #${record.rowNumber} (Group ${record.group}): Setting scale to prior state...`;
+            status.innerText = isLatest 
+                ? `Loading Latest Calculation: Row #${record.rowNumber} (Group ${record.group})...`
+                : `Replaying Turn #${record.rowNumber} (Group ${record.group}): Setting scale to prior state...`;
 
-            // 1. Reset scale level
             resetScaleRotations();
 
-            // 2. Render previous state of the scale
             currentState = JSON.parse(JSON.stringify(record.prevState));
             hardRenderAllPans();
 
-            // 3. Build sequential drop queue for this specific turn
             animationQueue = [];
             ['p', 's'].forEach(scale => {
                 ['l', 'r'].forEach(side => {
@@ -707,12 +696,13 @@
 
             pendingResultData = record;
 
-            // 4. Drop cubes or trigger swing immediately if no cubes were added
             if (animationQueue.length > 0) {
-                status.innerText = `Dropping cubes placed by Group ${record.group}...`;
+                status.innerText = isLatest 
+                    ? `Showing latest cubes placed by Group ${record.group}...`
+                    : `Dropping cubes placed by Group ${record.group}...`;
                 setTimeout(processQueue, 300);
             } else {
-                status.innerText = `Turn #${record.rowNumber} (No cubes added). Showing result...`;
+                status.innerText = `Displaying latest result for Row #${record.rowNumber}...`;
                 setTimeout(triggerSwings, 400);
             }
         }
@@ -814,7 +804,7 @@
             if (pendingResultData) {
                 applySwingToScale('p', pendingResultData.primaryResult);
                 applySwingToScale('s', pendingResultData.secondaryResult);
-                document.getElementById('status-text').innerText = `✓ Showing Row #${pendingResultData.rowNumber} (Group ${pendingResultData.group}).`;
+                document.getElementById('status-text').innerText = `✓ Latest Result Displayed: Row #${pendingResultData.rowNumber} (Group ${pendingResultData.group}).`;
             }
             isAnimating = false;
             document.getElementById('btn-update').disabled = false;
@@ -822,7 +812,7 @@
 
         window.onload = function() {
             initInventory();
-            fetchUpdate(); // Initial sync on page open
+            fetchUpdate();
         };
     </script>
 </body>
